@@ -1,3 +1,4 @@
+// ImageAdapter.java
 package com.example.projet;
 
 import android.content.Context;
@@ -9,6 +10,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
@@ -25,14 +27,13 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ImageViewHol
     private Context context;
     private List<Uri> imageUrls;
     private int selectedPosition = RecyclerView.NO_POSITION;
-    // Interface for item click listener
-    public interface OnItemClickListener {
-        void onItemClick(int position);
-    }
-
     private OnItemClickListener itemClickListener;
 
-    // Method to set the item click listener
+    public interface OnItemClickListener {
+        void onItemClick(int position);
+        void onDownloadClick(int position); // Add method for handling download button clicks
+    }
+
     public void setOnItemClickListener(OnItemClickListener listener) {
         this.itemClickListener = listener;
     }
@@ -56,7 +57,11 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ImageViewHol
         new LoadImageTask(holder.imageView).execute(imageUri.toString());
 
         // Set the background color based on selection
-        holder.itemView.setSelected(selectedPosition == position);
+        if (selectedPosition == position) {
+            holder.imageView.setBackgroundResource(R.drawable.image_border);
+        } else {
+            holder.imageView.setBackground(null); // Remove background if not selected
+        }
     }
 
     @Override
@@ -64,25 +69,32 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ImageViewHol
         return imageUrls != null ? imageUrls.size() : 0;
     }
 
-    public class ImageViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
-
+    public class ImageViewHolder extends RecyclerView.ViewHolder {
         ImageView imageView;
+        Button btnDelete;
+        Button btnDownload; // Add a reference to the download button
 
         public ImageViewHolder(@NonNull View itemView) {
             super(itemView);
             imageView = itemView.findViewById(R.id.imageView);
-            itemView.setOnClickListener(this);
-        }
+            btnDelete = itemView.findViewById(R.id.btnDelete);
+            btnDownload = itemView.findViewById(R.id.btnDownload); // Initialize the download button
 
-        @Override
-        public void onClick(View v) {
-            if (itemClickListener != null) {
+            // Set click listener for the delete button
+            btnDelete.setOnClickListener(v -> {
                 int position = getAdapterPosition();
-                if (position != RecyclerView.NO_POSITION) {
-                    itemClickListener.onItemClick(position);
-                    setSelectedPosition(position);
+                if (position != RecyclerView.NO_POSITION && itemClickListener != null) {
+                    itemClickListener.onItemClick(position); // Notify activity about delete action
                 }
-            }
+            });
+
+            // Set click listener for the download button
+            btnDownload.setOnClickListener(v -> {
+                int position = getAdapterPosition();
+                if (position != RecyclerView.NO_POSITION && itemClickListener != null) {
+                    itemClickListener.onDownloadClick(position); // Notify activity about download action
+                }
+            });
         }
     }
 
@@ -96,7 +108,6 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ImageViewHol
     }
 
     private static class LoadImageTask extends AsyncTask<String, Void, Bitmap> {
-
         private ImageView imageView;
 
         public LoadImageTask(ImageView imageView) {
