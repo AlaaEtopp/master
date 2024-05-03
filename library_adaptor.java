@@ -4,6 +4,7 @@ import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -35,6 +36,24 @@ public class library_adaptor extends RecyclerView.Adapter<library_adaptor.MyView
         Glide.with(c)
                 .load(imageUrl)
                 .into(holder.imageView);
+        holder.imageView.setOnClickListener(new View.OnClickListener(){
+
+            @Override
+            public void onClick(View v) {
+                if (holder.Downloadbutton.getVisibility()==View.VISIBLE){
+                    holder.Downloadbutton.setVisibility(View.INVISIBLE);
+                }else{
+                    holder.Downloadbutton.setVisibility(View.VISIBLE);
+                }
+            }
+        });
+        holder.Downloadbutton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                new ImageDownloader(v.getContext()).execute(imageUrl);
+
+            }
+        });
     }
 
     @Override
@@ -44,10 +63,12 @@ public class library_adaptor extends RecyclerView.Adapter<library_adaptor.MyView
 
     public static class MyViewHolder extends RecyclerView.ViewHolder {
         ImageView imageView;
+        Button Downloadbutton;
 
         public MyViewHolder(@NonNull View itemView) {
             super(itemView);
             imageView = itemView.findViewById(R.id.imageview1);
+            Downloadbutton=itemView.findViewById(R.id.DownalodButton);
         }
     }
 }

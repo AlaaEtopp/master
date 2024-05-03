@@ -29,6 +29,7 @@ public class search extends Fragment {
     private RecyclerView recyclerView;
     private MyCustomAdapter adapter;
 
+
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -51,6 +52,7 @@ public class search extends Fragment {
             public boolean onQueryTextSubmit(String query) {
                 // Handle search query submission
                 performSearch(query);
+                Toast.makeText(getContext(), "after perform Search: " , Toast.LENGTH_SHORT).show();
                 return true;
             }
 
@@ -71,16 +73,19 @@ public class search extends Fragment {
     private void performSearch(String query) {
         // Call the Unsplash API with the search query
         Call<SearchResponse> call = unsplashApi.searchPhotos(query, ACCESS_KEY);
-        call.enqueue(new Callback<SearchResponse>() {
+         call.enqueue(new Callback<SearchResponse>() {
+
             @Override
             public void onResponse(Call<SearchResponse> call, Response<SearchResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
+
                     // Handle successful response
                     List<Photo> photos = response.body().getResults();
                     // Create and set adapter for RecyclerView
                     adapter = new MyCustomAdapter(getContext(), photos);
                     recyclerView.setAdapter(adapter);
                 } else {
+
                     // Handle unsuccessful response or null response body
                     String errorMessage = response.message() != null ? response.message() : "Unknown error";
                     Log.e(TAG, "Unsuccessful response: " + errorMessage);
@@ -90,6 +95,7 @@ public class search extends Fragment {
 
             @Override
             public void onFailure(Call<SearchResponse> call, Throwable t) {
+
                 // Handle failure
                 Log.e(TAG, "Failure: " + t.getMessage());
                 Toast.makeText(getContext(), "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();

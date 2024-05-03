@@ -1,12 +1,13 @@
 package com.example.projet;
 
-import static android.content.ContentValues.TAG;
+import static androidx.constraintlayout.helper.widget.MotionEffect.TAG;
+import static com.example.projet.HelpUser.get_username_connected;
+import static com.example.projet.HelpUser.insert_url;
 
 import android.app.ProgressDialog;
-import android.content.ContentValues;
 import android.content.Context;
-import android.database.sqlite.SQLiteDatabase;
-import android.net.Uri;
+import android.graphics.drawable.Drawable;
+import android.os.Handler;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -16,23 +17,36 @@ import android.widget.ImageView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
+
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.target.CustomTarget;
+import com.bumptech.glide.request.transition.Transition;
+import com.example.projet.PictureDAO;
+import com.example.projet.Photo;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.StorageException;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 
-import java.util.ArrayList;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
+import java.util.UUID;
 
 public class MyCustomAdapter extends RecyclerView.Adapter<MyCustomAdapter.ViewHolder> {
 
     private List<Photo> photos;
-    private List <Photo> library;
+    private Context context;
+    FirebaseDatabase database;
+    DatabaseReference reference;
+
     public MyCustomAdapter(Context context, List<Photo> photos) {
+        this.context = context;
         this.photos = photos;
-        this.library=new ArrayList<>();
     }
 
     @NonNull
@@ -62,49 +76,83 @@ public class MyCustomAdapter extends RecyclerView.Adapter<MyCustomAdapter.ViewHo
                 }
             }
         });
+
         holder.saveButton.setOnClickListener(new View.OnClickListener() {
+
+            @Override
             public void onClick(View v) {
+                database = FirebaseDatabase.getInstance();
+                reference = database.getReference("users");
+                ProgressDialog p=new ProgressDialog(holder.itemView.getContext());
+                p.setMessage("savind data...");
+                p.show();
+                new Handler().postDelayed(() -> {
+                    get_username_connected(reference,new HelpUser.UsernameCallback() {
+                        @Override
+                        public void onUsernameReceived(String username) {
 
-                PictureDAO pictureDAO = new PictureDAO(v.getContext());
+                            if(username==""){
+                                Toast.makeText(p.getContext(),"you need to login to save photos in your library" ,Toast.LENGTH_SHORT).show();
+                            }
+                            else{
+                                insert_url(username,reference,imageUrl.toString());
+                            }
+                            p.dismiss();
+                        }
+                    });
+                },1000);
 
-                pictureDAO.open();
 
-// Insert a URL
-                pictureDAO.insertURL(imageUrl.toString());
-
-// Retrieve all URLs
-               List<String> urls = pictureDAO.getAllURLs();
-
-                pictureDAO.close();
-
-                /**if (imageUrl != null) {
-                     FirebaseStorage storage = FirebaseStorage.getInstance();
-                     StorageReference storageRef = storage.getReference().child("/cats").child(photo.getId());
-                     Uri imageUri = Uri.parse(imageUrl);
-                     UploadTask uploadTask = storageRef.putFile(imageUri);
-                     uploadTask.addOnSuccessListener(taskSnapshot -> {
-                         Toast.makeText(v.getContext(), "Success", Toast.LENGTH_SHORT).show();
-                         // Image uploaded successfully
-                         // Handle success, such as displaying a success message
-                     }).addOnFailureListener(exception -> {
-                         if (exception instanceof StorageException) {
-                             StorageException storageException = (StorageException) exception;
-                             int resultCode = storageException.getHttpResultCode();
-
-                         } else {
-                             Log.e(TAG, "Upload failed with exception: " + exception.getMessage());
-                         }
-                         // Handle unsuccessful uploads
-                         String s1= exception.getMessage();
-                         Toast.makeText(v.getContext(), "Upload failed: " + exception.getMessage(),Toast.LENGTH_SHORT).show();
-                         // Display an error message to the user
-                     });
-                 } else {
-                     // Handle the case where imageUrl is nul
-                 }*/
+                // Handle save button click
+                /*saveImageToLibrary(imageUrl);*/
             }
         });
+    }
 
+
+    private void saveImageToLibrary(String imageUrl) {
+        FirebaseStorage storage = FirebaseStorage.getInstance();
+        StorageReference storageRef = storage.getReference();
+        String uniqueFileName = generateUniqueFileName();
+        StorageReference imageRef = storageRef.child("images/" + uniqueFileName + ".jpg");
+
+        // Load the image using Glide into a SimpleTarget
+        Glide.with(context)
+                .as(byte[].class)
+                .load(imageUrl)
+                .into(new CustomTarget<byte[]>() {
+                    @Override
+                    public void onResourceReady(@NonNull byte[] resource, Transition<? super byte[]> transition) {
+                        // Upload the byte array to Firebase Storage
+                        UploadTask uploadTask = imageRef.putBytes(resource);
+                        uploadTask.addOnSuccessListener(taskSnapshot -> {
+                            // Image uploaded successfully, now add URL to database
+                            addImageUrlToDatabase(imageUrl);
+                        }).addOnFailureListener(exception -> {
+                            // Handle failed upload
+                            Toast.makeText(context, "Failed to upload image.", Toast.LENGTH_SHORT).show();
+                        });
+                    }
+
+                    @Override
+                    public void onLoadCleared(@Nullable Drawable placeholder) {
+                        // Not needed
+                    }
+                });
+    }
+
+    private void addImageUrlToDatabase(String imageUrl) {
+        PictureDAO pictureDAO = new PictureDAO(context);
+        pictureDAO.open();
+        pictureDAO.insertURL(imageUrl);
+        pictureDAO.close();
+        Toast.makeText(context, "Image saved to library!", Toast.LENGTH_SHORT).show();
+    }
+
+    private String generateUniqueFileName() {
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+        String randomString = UUID.randomUUID().toString();
+        return "image_" + timeStamp + "_" + randomString;
     }
 
     @Override
