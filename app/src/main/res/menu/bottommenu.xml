@@ -10,6 +10,11 @@
         android:title="Search"
         android:icon="@drawable/search_svgrepo_com"/>
 
+    <item
+        android:id="@+id/upload"
+        android:title=""
+        android:enabled="false"/>
+
 
     <item
         android:id="@+id/login"
