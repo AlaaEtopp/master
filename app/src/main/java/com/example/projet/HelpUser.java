@@ -25,6 +25,7 @@ import com.google.firebase.database.ValueEventListener;
 import java.lang.ref.Reference;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 public class HelpUser {
     String name;
@@ -179,6 +180,60 @@ public class HelpUser {
             }
         });
     }
+    public static void saved(DatabaseReference r, String url, String username, OnExistsListener listener) {
+        r.child(username).child("urls").addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                boolean exists = false;
+                if (snapshot.exists()){
+                    for (DataSnapshot child : snapshot.getChildren()) {
+                        String value = child.getValue(String.class);
+                        if (value != null && value.equals(url)) {
+                            exists = true;
+                            break;
+                        }}
+
+                }
+                // Invoke the listener with the result
+                listener.onExists(exists);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                // Handle database error
+                // For example, log the error
+                Log.e("Firebase", "Database operation cancelled: " + error.getMessage());
+            }
+        });
+    }
+
+    // Define an interface to handle the result
+    public interface OnExistsListener {
+        void onExists(boolean exists);
+    }
+    public static void remove_photo(DatabaseReference r,String username,String Url){
+        r.child(username).child("urls").addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                for(DataSnapshot child: snapshot.getChildren()){
+                    if (child.getValue(String.class).equals(Url)){
+                        String childkey=child.getKey();
+                        r.child(username).child("urls").child(childkey).removeValue();
+                        break;
+                    }
+
+                }
+
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+
+            }
+        });
+    }
+
+
 }
 
 

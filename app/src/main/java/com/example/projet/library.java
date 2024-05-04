@@ -37,6 +37,7 @@ public class library extends Fragment {
             {
                photosLibraries.addAll(urls);
                 Collections.reverse(photosLibraries);
+
                 library_adaptor adapter = new library_adaptor(photosLibraries, getActivity());
                 recyclerView.setAdapter(adapter);
                 recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));

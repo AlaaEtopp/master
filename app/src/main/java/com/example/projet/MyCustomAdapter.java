@@ -3,6 +3,7 @@ package com.example.projet;
 import static androidx.constraintlayout.helper.widget.MotionEffect.TAG;
 import static com.example.projet.HelpUser.get_username_connected;
 import static com.example.projet.HelpUser.insert_url;
+import static com.example.projet.HelpUser.saved;
 
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -95,7 +96,19 @@ public class MyCustomAdapter extends RecyclerView.Adapter<MyCustomAdapter.ViewHo
                                 Toast.makeText(p.getContext(),"you need to login to save photos in your library" ,Toast.LENGTH_SHORT).show();
                             }
                             else{
-                                insert_url(username,reference,imageUrl.toString());
+                                saved(reference,imageUrl.toString(),username,new HelpUser.OnExistsListener() {
+                                    @Override
+                                    public void onExists(boolean exists) {
+                                        if (exists) {
+                                            Toast.makeText(p.getContext(), "photo already saved in your library",Toast.LENGTH_SHORT).show();
+
+
+                                        } else {
+                                            insert_url(username,reference,imageUrl.toString());
+                                        }
+                                    }
+                                });
+
                             }
                             p.dismiss();
                         }
